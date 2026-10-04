@@ -1,0 +1,271 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Lenswork design tokens — scholarly, diagram-first studio.
+   Neutral surfaces, one warm accent; additional hues are reserved for
+   semantic epistemic encoding and always paired with shape/line-style.
+--------------------------------------------------------------------------- */
+
+:root {
+  /* Surfaces & ink (light) */
+  --bg: #f7f5f1;
+  --surface: #fffdf9;
+  --surface-2: #efece5;
+  --surface-3: #e6e2d8;
+  --ink: #221f1a;
+  --ink-muted: #5c564b;
+  --ink-faint: #8a8375;
+  --line: #d8d3c7;
+  --line-strong: #b4ad9d;
+
+  /* Single UI accent (warm sienna — editorial, not AI-purple) */
+  --accent: #96492b;
+  --accent-strong: #7c3a20;
+  --accent-soft: #f3e2d9;
+  --accent-ink: #ffffff;
+
+  /* Status */
+  --ok: #2e6e46;
+  --warn: #8a6410;
+  --danger: #a33a2e;
+  --danger-soft: #f6e3e0;
+
+  /* Epistemic semantic palette (always paired with shape/line-style) */
+  --ep-fact: #2b2927;          /* solid node, solid border */
+  --ep-fact-soft: #eceae4;
+  --ep-claim: #275d8c;         /* outlined node */
+  --ep-claim-soft: #e3edf5;
+  --ep-assumption: #8a5a0b;    /* dashed border */
+  --ep-assumption-soft: #f5ecd8;
+  --ep-inference: #176b63;     /* tinted fill */
+  --ep-inference-soft: #ddefec;
+  --ep-value: #7b3b64;         /* diamond/tag shape */
+  --ep-value-soft: #f2e4ee;
+  --ep-unknown: #6a6458;       /* dotted border */
+  --ep-unknown-soft: #efede8;
+  --ep-external: #3c6442;      /* link affordance */
+  --ep-external-soft: #e2eee4;
+
+  /* Diagram edge semantics */
+  --edge-support: #3f7a52;
+  --edge-contradict: #a33a2e;
+  --edge-neutral: #8a8375;
+
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow: 0 1px 2px rgb(34 31 26 / 0.06), 0 2px 8px rgb(34 31 26 / 0.05);
+  --shadow-lg: 0 2px 6px rgb(34 31 26 / 0.08), 0 10px 32px rgb(34 31 26 / 0.12);
+}
+
+[data-theme="dark"] {
+  --bg: #171511;
+  --surface: #201d18;
+  --surface-2: #28241e;
+  --surface-3: #322d25;
+  --ink: #ece7dd;
+  --ink-muted: #b0a896;
+  --ink-faint: #837b6b;
+  --line: #3a352c;
+  --line-strong: #544d40;
+
+  --accent: #d98e68;
+  --accent-strong: #e4a685;
+  --accent-soft: #3c2a20;
+  --accent-ink: #1d130d;
+
+  --ok: #7fc295;
+  --warn: #d4ab4a;
+  --danger: #dd8d80;
+  --danger-soft: #41231f;
+
+  --ep-fact: #d8d3c9;
+  --ep-fact-soft: #2e2b25;
+  --ep-claim: #7fb0d9;
+  --ep-claim-soft: #22303c;
+  --ep-assumption: #d9ae57;
+  --ep-assumption-soft: #382e1b;
+  --ep-inference: #6ec2b7;
+  --ep-inference-soft: #1d342f;
+  --ep-value: #cf8fb8;
+  --ep-value-soft: #392231;
+  --ep-unknown: #a29a8a;
+  --ep-unknown-soft: #2c2922;
+  --ep-external: #8dc097;
+  --ep-external-soft: #243527;
+
+  --edge-support: #83bd96;
+  --edge-contradict: #dd8d80;
+  --edge-neutral: #837b6b;
+
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 2px 6px rgb(0 0 0 / 0.45), 0 10px 32px rgb(0 0 0 / 0.5);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ep-fact: var(--ep-fact);
+  --color-ep-fact-soft: var(--ep-fact-soft);
+  --color-ep-claim: var(--ep-claim);
+  --color-ep-claim-soft: var(--ep-claim-soft);
+  --color-ep-assumption: var(--ep-assumption);
+  --color-ep-assumption-soft: var(--ep-assumption-soft);
+  --color-ep-inference: var(--ep-inference);
+  --color-ep-inference-soft: var(--ep-inference-soft);
+  --color-ep-value: var(--ep-value);
+  --color-ep-value-soft: var(--ep-value-soft);
+  --color-ep-unknown: var(--ep-unknown);
+  --color-ep-unknown-soft: var(--ep-unknown-soft);
+  --color-ep-external: var(--ep-external);
+  --color-ep-external-soft: var(--ep-external-soft);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --radius-DEFAULT: var(--radius);
+  --radius-lg: var(--radius-lg);
+  --shadow-DEFAULT: var(--shadow);
+  --shadow-lg: var(--shadow-lg);
+}
+
+html {
+  color-scheme: light;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Brand / page titles only */
+.font-brand {
+  font-family: var(--font-source-serif), Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+/* Accessible focus */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 10px 16px;
+  border-radius: 0 0 var(--radius) 0;
+}
+.skip-link:focus {
+  left: 0;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   React Flow adjustments (scoped; library CSS imported in the canvas module)
+--------------------------------------------------------------------------- */
+.lw-flow .react-flow__attribution {
+  display: none;
+}
+.lw-flow .react-flow__node {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+.lw-flow .react-flow__edge-text {
+  font-size: 11px;
+  fill: var(--ink-muted);
+}
+.lw-flow .react-flow__edge-textbg {
+  fill: var(--surface);
+}
+.lw-flow .react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+}
+.lw-flow .react-flow__controls {
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.lw-flow .react-flow__controls-button {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  fill: var(--ink-muted);
+  width: 28px;
+  height: 28px;
+}
+.lw-flow .react-flow__controls-button:hover {
+  background: var(--surface-2);
+}
+.lw-flow .react-flow__node.selected .lw-node {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* Loop-direction animation for the systems lens (disabled under reduced motion) */
+@keyframes lw-dash-flow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+.lw-loop-animated path.react-flow__edge-path {
+  stroke-dasharray: 6 4;
+  animation: lw-dash-flow 1.6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lw-loop-animated path.react-flow__edge-path {
+    animation: none;
+  }
+}
+
+/* Thin scrollbars for panels */
+.lw-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+/* Print-friendly report */
+@media print {
+  body {
+    background: #ffffff;
+    color: #111111;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

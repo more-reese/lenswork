@@ -1,0 +1,34 @@
+node_modules/
+dist/
+dist-electron/
+out/
+build/
+release/
+.next/
+coverage/
+*.log
+npm-debug.log*
+.env
+.env.*
+!.env.example
+.DS_Store
+.vscode/
+.idea/
+*.tsbuildinfo
+
+# Next.js regenerates this on every dev/build run
+next-env.d.ts
+
+# Saved cases are local working data; the app creates the folder on first run
+data/cases/*.json
+data/cases/*.tmp
+
+# Playwright output
+test-results/
+playwright-report/
+
+# Local agent tooling config (machine-specific paths) and the agent rules
+# file `next dev` writes into the project root
+.claude/
+AGENTS.md
+CLAUDE.md
