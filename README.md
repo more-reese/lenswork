@@ -2,8 +2,8 @@
 
 A local web app that takes one case (a decision, an argument, a policy, a puzzling result) and analyzes it through eight distinct reasoning lenses, labeling every claim by what kind of claim it is.
 
-<!-- ![Synthesis view for the office-mandate demo: convergence matrix and the preserved-conflicts section](docs/screenshots/synthesis.png) -->
-<!-- ![Case-model review: parsed items grouped as facts, claims, assumptions, values and unknowns, each with Edit and Remove](docs/screenshots/case-model-review.png) -->
+![Synthesis view for the office-mandate demo: where the lenses converge beside where they conflict, with the conflicts preserved rather than averaged](docs/screenshots/synthesis.png)
+![Case-model review: the parsed case split into facts and claims, each labeled by epistemic type, with Edit and Remove on every item](docs/screenshots/case-model-review.png)
 
 ## Why I built this
 
