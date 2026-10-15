@@ -29,22 +29,51 @@ Most analysis of a hard decision runs through one default way of reasoning and q
 
 ## Quick start
 
-### Requirements
+lenswork runs on your own computer. There's no account to create and nothing to deploy, and it works without an API key.
 
-- Node 20.9 or newer (Next.js 16's minimum). I verified it on Node 26.7.0 with npm 11.19.0, on macOS 15.8.
-- Optional: an Anthropic API key for real analysis.
+### 1. Requirements
 
-### Install and run
+- **Git** and **Node.js 20.9 or newer** (check with `node --version`). Get Node from https://nodejs.org if you don't have it. I verified it on Node 26.7.0 with npm 11.19.0, on macOS 15.8.
+- Optional: an Anthropic API key, only if you want real analysis instead of demo mode.
+
+### 2. Download
+
+```bash
+git clone https://github.com/more-reese/lenswork.git
+```
+
+```bash
+cd lenswork
+```
+
+(No Git? On the GitHub page, use **Code → Download ZIP**, unzip it, and open a terminal in the unzipped folder.)
+
+### 3. Install
 
 ```bash
 npm ci
 ```
 
+This takes a minute or two the first time.
+
+### 4. Run
+
 ```bash
 npm run dev
 ```
 
-Then open http://localhost:3000. With no key, the header shows **Demo mode**.
+Leave that terminal open and go to http://localhost:3000 in your browser. The header badge says **Demo mode**, which means no API key is configured and nothing leaves your computer.
+
+### 5. Try it
+
+1. On the home page, click **The three-day office mandate**.
+2. Click **Parse the case**, then **Looks right — continue to analysis**.
+3. Click **Run all eight lenses**. In demo mode this takes a few seconds.
+4. Open any lens in the left menu, then **Synthesis**.
+
+Your cases are saved as JSON files in `data/cases/` inside the project folder. Stop the app any time with Ctrl+C.
+
+### Other commands
 
 Production build and server:
 
@@ -68,13 +97,21 @@ npm run lint
 
 `npm test` runs 38 Vitest unit tests: schema acceptance and rejection, referential integrity, mock determinism, trace resolution, layout sanity (including an 80-node stress diagram), and prompt-contract checks. `npm run e2e` runs a Playwright test of the full journey in forced demo mode. See the limitations below before running it.
 
-### Configuration
+### Using your own Anthropic API key (real analysis)
 
-Copy the example file and add your key. Next.js loads `.env` automatically.
+1. Create the config file from the template:
 
-```bash
-cp .env.example .env
-```
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Open `.env` in a text editor and paste your key after the `=`, with no spaces or quotes: `ANTHROPIC_API_KEY=sk-ant-...`
+3. **Restart the app** (Ctrl+C, then `npm run dev`). Next.js only reads `.env` at startup.
+4. Reload the page. The header badge should now say **Live analysis**.
+
+`.env` is git-ignored, so your key is never committed. It's read on the server only and never sent to the browser. With a key, case text is sent to the Anthropic API; the intake form says so.
+
+**If the first real run fails with "This API key is not scoped to a workspace":** your key is a user-level key (it starts with `sk-ant-usr-`). Either create a key inside a workspace in the [Anthropic Console](https://console.anthropic.com) and use that, or keep the key and add your workspace ID to `.env` as `ANTHROPIC_WORKSPACE_ID=...`, then restart.
 
 | Variable | Required | What it does |
 | --- | --- | --- |
