@@ -7,6 +7,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { z } from "zod";
+import { extractJson, schemaForPrompt } from "@/lib/llm/json";
 import {
   CaseModelSchema,
   SynthesisSchema,
@@ -37,10 +38,24 @@ const EFFORT_BY_DEPTH: Record<Depth, "low" | "medium" | "high"> = {
 };
 
 const MAX_TOKENS_BY_DEPTH: Record<Depth, number> = {
-  quick: 8000,
-  standard: 16000,
-  deep: 16000,
+  quick: 12000,
+  standard: 24000,
+  deep: 32000,
 };
+
+/** Haiku 4.5 rejects the effort parameter; every other model here accepts it. */
+function effortFor(opts: StageOptions): { effort?: "low" | "medium" | "high" } {
+  return opts.model === "claude-haiku-4-5" ? {} : { effort: EFFORT_BY_DEPTH[opts.depth] };
+}
+
+/**
+ * How a response is shaped:
+ *  - "grammar": API-enforced structured output. Strongest guarantee, but the
+ *    schema must be small enough for the API to compile into a grammar.
+ *  - "json": schema in the prompt, reply parsed and Zod-validated here. Needed
+ *    for the large lens/synthesis schemas, which the grammar compiler rejects.
+ */
+type OutputMode = "grammar" | "json";
 
 export function hasApiKey(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
@@ -99,35 +114,68 @@ export class AnthropicProvider implements LLMProvider {
     system: string,
     user: string,
     opts: StageOptions,
+    mode: OutputMode,
     integrityCheck?: (value: z.infer<S>) => string[]
   ): Promise<z.infer<S>> {
-    const attempt = async (userContent: string): Promise<{ value?: z.infer<S>; errors: string }> => {
-      const response = await this.client.messages.parse({
-        model: opts.model,
-        max_tokens: MAX_TOKENS_BY_DEPTH[opts.depth],
-        system,
-        messages: [{ role: "user", content: userContent }],
-        output_config: {
-          format: zodOutputFormat(schema),
-          effort: EFFORT_BY_DEPTH[opts.depth],
-        },
-      });
+    const refusal = () =>
+      new ProviderError(
+        "The model declined this request (safety refusal). Rephrase the case material and retry.",
+        "unknown",
+        false
+      );
+    const truncated =
+      "Response was truncated (max_tokens). Produce a more compact but complete output.";
 
-      if (response.stop_reason === "refusal") {
-        throw new ProviderError(
-          "The model declined this request (safety refusal). Rephrase the case material and retry.",
-          "unknown",
-          false
-        );
+    /** One model call; returns the parsed (not yet Zod-validated) value or an error string. */
+    const callModel = async (userContent: string): Promise<{ parsed?: unknown; errors?: string }> => {
+      if (mode === "grammar") {
+        const response = await this.client.messages.parse({
+          model: opts.model,
+          max_tokens: MAX_TOKENS_BY_DEPTH[opts.depth],
+          system,
+          messages: [{ role: "user", content: userContent }],
+          output_config: { format: zodOutputFormat(schema), ...effortFor(opts) },
+        });
+        if (response.stop_reason === "refusal") throw refusal();
+        if (response.stop_reason === "max_tokens") return { errors: truncated };
+        if (response.parsed_output == null) {
+          return { errors: "Output did not parse against the schema. Produce complete, valid JSON for the schema." };
+        }
+        return { parsed: response.parsed_output };
       }
-      if (response.stop_reason === "max_tokens") {
-        return { errors: "Response was truncated (max_tokens). Produce a more compact but complete output." };
+
+      // "json" mode: schema travels in the prompt; stream because outputs are large.
+      const jsonSystem = `${system}
+
+OUTPUT FORMAT: Respond with exactly one JSON object and nothing else — no prose before or after, no markdown code fences. It must validate against this JSON Schema (every required field present; enum fields use exactly the listed values):
+${schemaForPrompt(schema)}`;
+      const effort = effortFor(opts);
+      const response = await this.client.messages
+        .stream({
+          model: opts.model,
+          max_tokens: MAX_TOKENS_BY_DEPTH[opts.depth],
+          system: jsonSystem,
+          messages: [{ role: "user", content: userContent }],
+          ...(effort.effort ? { output_config: effort } : {}),
+        })
+        .finalMessage();
+      if (response.stop_reason === "refusal") throw refusal();
+      if (response.stop_reason === "max_tokens") return { errors: truncated };
+      const text = response.content
+        .filter((b): b is Anthropic.TextBlock => b.type === "text")
+        .map((b) => b.text)
+        .join("");
+      try {
+        return { parsed: extractJson(text) };
+      } catch (err) {
+        return { errors: err instanceof Error ? err.message : String(err) };
       }
-      const parsed = response.parsed_output;
-      if (parsed == null) {
-        return { errors: "Output did not parse against the schema. Produce complete, valid JSON for the schema." };
-      }
-      const validated = schema.safeParse(parsed);
+    };
+
+    const attempt = async (userContent: string): Promise<{ value?: z.infer<S>; errors: string }> => {
+      const called = await callModel(userContent);
+      if (called.errors !== undefined) return { errors: called.errors };
+      const validated = schema.safeParse(called.parsed);
       if (!validated.success) {
         return { errors: validated.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("\n") };
       }
@@ -156,13 +204,13 @@ export class AnthropicProvider implements LLMProvider {
 
   async normalize(input: CaseInput, opts: StageOptions): Promise<CaseModel> {
     const { system, user } = normalizePrompts(input);
-    return this.callStructured(CaseModelSchema, system, user, opts);
+    return this.callStructured(CaseModelSchema, system, user, opts, "grammar");
   }
 
   async analyzeLens(lens: LensId, caseModel: CaseModel, opts: StageOptions): Promise<LensAnalysis> {
     const { system, user } = lensPrompts(lens, caseModel, opts.depth);
     const schema = lensAnalysisSchemaFor(lens);
-    return this.callStructured(schema, system, user, opts, (a) =>
+    return this.callStructured(schema, system, user, opts, "json", (a) =>
       diagramIntegrityErrors(a as LensAnalysis)
     );
   }
@@ -173,7 +221,7 @@ export class AnthropicProvider implements LLMProvider {
     opts: StageOptions
   ): Promise<Synthesis> {
     const { system, user } = synthesisPrompts(caseModel, analyses);
-    return this.callStructured(SynthesisSchema, system, user, opts);
+    return this.callStructured(SynthesisSchema, system, user, opts, "json");
   }
 
   async refineLens(
@@ -185,7 +233,7 @@ export class AnthropicProvider implements LLMProvider {
   ): Promise<RefineResult> {
     const { system, user } = refinePrompts(lens, caseModel, current, message);
     const schema = lensAnalysisSchemaFor(lens);
-    const analysis = await this.callStructured(schema, system, user, opts, (a) =>
+    const analysis = await this.callStructured(schema, system, user, opts, "json", (a) =>
       diagramIntegrityErrors(a as LensAnalysis)
     );
     return { analysis: analysis as LensAnalysis, note: refineNote(message) };
